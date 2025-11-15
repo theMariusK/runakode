@@ -7,12 +7,13 @@ import (
 )
 
 type Config struct {
+	Address string `yaml:"address"`
+	Port string `yaml:"port"`
 	SupportedLanguages []string `yaml:"supportedLanguages"`
 }
 
 func Load(path string) (*Config) {
 	config, err := os.ReadFile(path)
-	defer config.Close()
 	if err != nil {
 		log.Fatalf("Cannot find the configuration in %s!", path)
 	}
