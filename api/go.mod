@@ -1,4 +1,4 @@
-module runakode-api
+module github.com/theMariusK/runakode/api
 
 go 1.22.2
 

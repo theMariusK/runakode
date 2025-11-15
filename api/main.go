@@ -6,6 +6,7 @@ import (
 	"log"
 	"flag"
 	"encoding/json"
+	"github.com/theMariusK/runakode/api/config"
 )
 
 type RunRequest struct {
