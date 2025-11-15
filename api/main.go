@@ -13,10 +13,6 @@ type RunRequest struct {
 	SourceCode string `json:"source_code"`
 }
 
-type Config struct {
-	SupportedLanguages []string `yaml:"supportedLanguages"`
-}
-
 type RunResponse struct {
 	id int `json:"id"`
 	result string `json:"result"`
@@ -42,6 +38,10 @@ func api(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	conf := config.Load("config.yaml")
+	fmt.Println(conf)
+
+	// ability to override configuration
 	ip := flag.String("server", "127.0.0.1", `
 	"IP address on which the API will be listening, default is 127.0.0.1"`)
 	port := flag.String("port", "8080", `
