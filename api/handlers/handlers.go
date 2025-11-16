@@ -107,6 +107,6 @@ func Api(conf *config.Config, mq *amqp.Channel) (http.HandlerFunc) {
 		if err != nil {
 			log.Println(err.Error())
 		}
-		fmt.Fprintf(w, "Got response: %s\n", response)
+		fmt.Fprint(w, string(response))
         }
 }
