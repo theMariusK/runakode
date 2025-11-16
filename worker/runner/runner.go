@@ -29,7 +29,15 @@ func RunSandbox(r *RunRequest) []byte {
 	tempDir, err := os.MkdirTemp("", "sandbox-*")
 	defer os.RemoveAll(tempDir)
 
-	codeFile := filepath.Join(tempDir, "main.py")
+	var codeFile string
+	switch r.Language {
+	case "python":
+		codeFile = filepath.Join(tempDir, "main.py")
+	case "go":
+		codeFile = filepath.Join(tempDir, "main.go")
+	default:
+		codeFile = filepath.Join(tempDir, "main.py")
+	}
 	os.WriteFile(codeFile, []byte(r.SourceCode), 0644)
 
 	image := fmt.Sprintf("%s-runner", r.Language)
@@ -45,7 +53,7 @@ func RunSandbox(r *RunRequest) []byte {
 	}
 
 	// TODO: time in config
-	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10 * time.Second)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "docker", cmdArgs...)

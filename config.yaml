@@ -4,6 +4,7 @@ address: 127.0.0.1
 port: 8080
 supportedLanguages:
   - python
+  - go
 rabbitmq:
   url: "amqp://guest:guest@localhost:5672/"
   queue: "runner_jobs"
