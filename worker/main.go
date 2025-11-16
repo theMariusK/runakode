@@ -1,11 +1,10 @@
 package main
 
 import (
-	"github.com/theMariusK/runakode/api/config"
+	"github.com/theMariusK/runakode/worker/config"
 	"flag"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
-	"encoding/json"
 	"github.com/theMariusK/runakode/worker/runner"
 )
 
@@ -48,37 +47,17 @@ func main() {
 		false, // no-wait
 		nil, // args
 	)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 
-	log.Println("Listening for messages...")
+	jobChan := make(chan amqp.Delivery, conf.MaxJobs * 2)
 
-	var forever chan struct{}
+	for i := 0; i < conf.MaxJobs; i++ {
+		go runner.Worker(i, conn, jobChan)
+	}
 
-	go func() {
-		for msg := range msgs {
-			log.Printf("Got a message: %s\n", msg.Body)
-
-			var request *runner.RunRequest
-			err := json.Unmarshal([]byte(msg.Body), &request)
-			if err != nil {
-				log.Println(err.Error())
-                                return
-			}
-
-			response := runner.RunSandbox(request)
-
-			ch.Publish(
-				"",
-				msg.ReplyTo,
-				false,
-				false,
-				amqp.Publishing{
-					ContentType: "application/json",
-					CorrelationId: msg.CorrelationId,
-					Body: []byte(response),
-				},
-			)
-		}
-	}()
-
-	<-forever
+	for msg := range msgs {
+		jobChan <- msg
+	}
 }

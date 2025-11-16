@@ -8,8 +8,9 @@ import (
 	"fmt"
 	"path/filepath"
 	"time"
-	"encoding/json"
 	"bytes"
+	amqp "github.com/rabbitmq/amqp091-go"
+	"encoding/json"
 )
 
 type RunRequest struct {
@@ -78,4 +79,43 @@ func RunSandbox(r *RunRequest) []byte {
 	}
 
 	return jsonResponse
+}
+
+func Worker(id int, conn *amqp.Connection, jobs <-chan amqp.Delivery) {
+	log.Printf("Worker (%d) started!\n", id)
+
+	ch, err := conn.Channel()
+	if err != nil {
+		log.Printf("Failed to open a channel on worker ID %d\n%v", id, err.Error())
+		return
+	}
+	defer ch.Close()
+
+	for job := range jobs {
+		log.Printf("[Worker %d] Running a job (%d): %s\n", id, job.CorrelationId, job.Body)
+
+		var request RunRequest
+		err := json.Unmarshal([]byte(job.Body), &request)
+		if err != nil {
+			log.Println(err.Error())
+			return
+		}
+
+		response := RunSandbox(&request)
+
+		err = ch.Publish(
+			"",
+			job.ReplyTo,
+			false,
+			false,
+			amqp.Publishing{
+				ContentType: "application/json",
+				CorrelationId: job.CorrelationId,
+				Body: []byte(response),
+			},
+		)
+		if err != nil {
+			log.Printf("[Worker %d] Publish failed!\n%v", id, err.Error())
+		}
+	}
 }
