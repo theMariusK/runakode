@@ -2,11 +2,14 @@ package handlers
 
 import (
 	"fmt"
+	"context"
 	"net/http"
 	"log"
 	"encoding/json"
 	"github.com/theMariusK/runakode/api/config"
 	"slices"
+	"time"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type RunRequest struct {
@@ -20,7 +23,7 @@ type RunResponse struct {
 	exitCode int `json:"exit_code"`
 }
 
-func Api(conf *config.Config) (http.HandlerFunc) {
+func Api(conf *config.Config, mq *amqp.Channel) (http.HandlerFunc) {
 	return func(w http.ResponseWriter, r *http.Request) {
 	        log.Printf("Got a %s request from %s\n", r.Method, r.RemoteAddr)
 	        if r.Method != http.MethodPost {
@@ -40,6 +43,25 @@ func Api(conf *config.Config) (http.HandlerFunc) {
 			http.Error(w, "Unsupported language!", http.StatusBadRequest)
 			return
 		}
-	        fmt.Fprintf(w, request.SourceCode)
+
+		// TODO: time in config
+		ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+		defer cancel()
+
+		err = mq.PublishWithContext(
+			ctx,
+			"",
+			conf.RabbitMQ.Queue,
+			false,
+			false,
+			amqp.Publishing {
+				ContentType: "text/plain",
+				Body: []byte(request.SourceCode),
+			})
+		if err != nil {
+			log.Printf("Message has not been sent!\n%v", err.Error())
+		}
+
+		fmt.Fprintf(w, "Sent to Queue!")
         }
 }
