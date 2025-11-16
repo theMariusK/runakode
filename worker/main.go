@@ -5,6 +5,8 @@ import (
 	"flag"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
+	"encoding/json"
+	"github.com/theMariusK/runakode/worker/runner"
 )
 
 func main() {
@@ -47,10 +49,23 @@ func main() {
 		nil, // args
 	)
 
+	log.Println("Listening for messages...")
+
 	var forever chan struct{}
 
 	go func() {
 		for msg := range msgs {
+			log.Printf("Got a message: %s\n", msg.Body)
+
+			var request *runner.RunRequest
+			err := json.Unmarshal([]byte(msg.Body), &request)
+			if err != nil {
+				log.Println(err.Error())
+                                return
+			}
+
+			response := runner.RunSandbox(request)
+
 			ch.Publish(
 				"",
 				msg.ReplyTo,
@@ -59,7 +74,7 @@ func main() {
 				amqp.Publishing{
 					ContentType: "application/json",
 					CorrelationId: msg.CorrelationId,
-					Body: []byte("TEST"),
+					Body: []byte(response),
 				},
 			)
 		}
