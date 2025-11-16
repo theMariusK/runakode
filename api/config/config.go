@@ -10,6 +10,10 @@ type Config struct {
 	Address string `yaml:"address"`
 	Port string `yaml:"port"`
 	SupportedLanguages []string `yaml:"supportedLanguages"`
+	RabbitMQ struct {
+		URL string `yaml:"url"`
+		Queue string `yaml:"queue"`
+	} `yaml:"rabbitmq"`
 }
 
 func Load(path string) (*Config) {

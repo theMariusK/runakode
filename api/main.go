@@ -14,13 +14,24 @@ func main() {
 	conf := config.Load(*configPath)
 
 	// ability to override configuration
-/*	ip := flag.String("server", "127.0.0.1", `
+	default_values := map[string]string{
+		"address": "127.0.0.1",
+		"port": "8080",
+	}
+
+	address := flag.String("address", default_values["address"], `
 	"IP address on which the API will be listening, default is 127.0.0.1"`)
-	port := flag.String("port", "8080", `
+	port := flag.String("port", default_values["port"], `
 	"Port on which the API will be listening, default is 8080"`)
 	flag.Parse()
-	server := fmt.Sprintf("%s:%s", *ip, *port)
-*/
+
+	if *address != default_values["address"] {
+		conf.Address = *address
+	}
+
+	if *port != default_values["port"] {
+		conf.Port = *port
+	}
 
         server := server.Init(conf)
 	if err := server.Run(); err != nil {
