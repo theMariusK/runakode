@@ -14,6 +14,7 @@ type Config struct {
 		URL string `yaml:"url"`
 		Queue string `yaml:"queue"`
 	} `yaml:"rabbitmq"`
+	MaxJobs int `yaml:"maxJobs"`
 }
 
 func Load(path string) (*Config) {
