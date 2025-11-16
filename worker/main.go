@@ -51,7 +51,17 @@ func main() {
 
 	go func() {
 		for msg := range msgs {
-			log.Printf("Message: %s", msg.Body)
+			ch.Publish(
+				"",
+				msg.ReplyTo,
+				false,
+				false,
+				amqp.Publishing{
+					ContentType: "application/json",
+					CorrelationId: msg.CorrelationId,
+					Body: []byte("TEST"),
+				},
+			)
 		}
 	}()
 

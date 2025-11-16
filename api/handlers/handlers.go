@@ -10,6 +10,7 @@ import (
 	"slices"
 	"time"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/google/uuid"
 )
 
 type RunRequest struct {
@@ -21,6 +22,63 @@ type RunResponse struct {
 	id int `json:"id"`
 	result string `json:"result"`
 	exitCode int `json:"exit_code"`
+}
+
+func SendAndWait(mq *amqp.Channel, queue string, job []byte) ([]byte, error) {
+	corrID := uuid.New().String()
+
+	reply, err := mq.QueueDeclare(
+		"",
+		false, // durable
+		true, // autoDelete
+		true, // exclusive
+		false, // noWait
+		nil, //args
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	msgs, err := mq.Consume(
+		reply.Name,
+		"",
+		true,
+		true,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: time in config
+        ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancel()
+
+	err = mq.PublishWithContext(
+		ctx,
+		"",
+		queue,
+		false,
+		false,
+		amqp.Publishing {
+			ContentType: "application/json",
+			Body: job,
+			ReplyTo: reply.Name,
+			CorrelationId: corrID,
+		})
+	if err != nil {
+		log.Printf("Message has not been sent!\n%v", err.Error())
+	}
+
+	for msg := range msgs {
+		if msg.CorrelationId == corrID {
+			return msg.Body, nil
+		}
+	}
+
+	return nil, fmt.Errorf("No matching response found!")
 }
 
 func Api(conf *config.Config, mq *amqp.Channel) (http.HandlerFunc) {
@@ -44,24 +102,11 @@ func Api(conf *config.Config, mq *amqp.Channel) (http.HandlerFunc) {
 			return
 		}
 
-		// TODO: time in config
-		ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
-		defer cancel()
-
-		err = mq.PublishWithContext(
-			ctx,
-			"",
-			conf.RabbitMQ.Queue,
-			false,
-			false,
-			amqp.Publishing {
-				ContentType: "text/plain",
-				Body: []byte(request.SourceCode),
-			})
+		job, err := json.Marshal(request)
+		response, err := SendAndWait(mq, conf.RabbitMQ.Queue, job)
 		if err != nil {
-			log.Printf("Message has not been sent!\n%v", err.Error())
+			log.Println(err.Error())
 		}
-
-		fmt.Fprintf(w, "Sent to Queue!")
+		fmt.Fprintf(w, "Got response: %s\n", response)
         }
 }
