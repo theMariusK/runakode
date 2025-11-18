@@ -4,6 +4,8 @@ all: build build_images
 build:
 	@echo "Building the application..."
 	go build -o ./runakode
+	go build -o ./runakode-api ./api/
+	go build -o ./runakode-worker ./worker/
 	@echo "Application successfully built."
 
 build_images:
