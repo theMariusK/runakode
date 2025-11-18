@@ -10,21 +10,18 @@ import (
 )
 
 func main() {
-	// initial configuration
-	configPath := flag.String("config", "./config.yaml", `
-	"Configuration file path, default is ../config.yaml"`)
+	// --- initial configuration ---
+	configPath := flag.String("config", "./config.yaml", "Configuration file path")
 	conf := config.Load(*configPath)
 
-	// ability to override configuration
+	// --- ability to override configuration ---
 	default_values := map[string]string{
 		"address": "127.0.0.1",
 		"port": "8080",
 	}
 
-	address := flag.String("address", default_values["address"], `
-	"IP address on which the API will be listening, default is 127.0.0.1"`)
-	port := flag.String("port", default_values["port"], `
-	"Port on which the API will be listening, default is 8080"`)
+	address := flag.String("address", default_values["address"], "IP address on which the API server will be listening")
+	port := flag.String("port", default_values["port"], "Port on which the API server will be listening")
 	flag.Parse()
 
 	if *address != default_values["address"] {
@@ -35,6 +32,8 @@ func main() {
 		conf.Port = *port
 	}
 
+	// --- start the API server ---
+
 	go func() {
 		server := server.Init(conf)
 		if err := server.Run(); err != nil {
@@ -42,7 +41,7 @@ func main() {
 		}
 	}()
 
-	// -------------
+	// --- start the Worker ---
 
 	conn, err := amqp.Dial(conf.RabbitMQ.URL)
 	if err != nil {
@@ -57,7 +56,7 @@ func main() {
 	defer ch.Close()
 
 	_, err = ch.QueueDeclare(
-                conf.RabbitMQ.Queue,
+                conf.RabbitMQ.Queue, // queue
                 true, // durable
                 false, // autoDelete
                 false, // exclusive
