@@ -14,7 +14,11 @@ type Config struct {
 		URL string `yaml:"url"`
 		Queue string `yaml:"queue"`
 	} `yaml:"rabbitmq"`
-	MaxJobs int `yaml:"maxJobs"`
+	MaxWorkers int `yaml:"maxWorkers"`
+	ApiTimeout int `yaml:"apiTimeout"`
+	JobCPU string `yaml:"jobCpu"`
+	JobMemory string `yaml:"jobMemory"`
+	JobTimeout int `yaml:"jobTimeout"`
 }
 
 func Load(path string) (*Config) {

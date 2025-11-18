@@ -11,6 +11,7 @@ import (
 	"bytes"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"encoding/json"
+	"github.com/theMariusK/runakode/config"
 )
 
 type RunRequest struct {
@@ -25,7 +26,7 @@ type RunResponse struct {
 	Timeout bool
 }
 
-func RunSandbox(r *RunRequest) []byte {
+func RunSandbox(r *RunRequest, conf *config.Config) []byte {
 	tempDir, err := os.MkdirTemp("", "sandbox-*")
 	defer os.RemoveAll(tempDir)
 
@@ -46,14 +47,13 @@ func RunSandbox(r *RunRequest) []byte {
 		"--rm",
 		"--runtime=runsc",
 		"--network=none",
-		"-m", "128m",
-		"--cpus", "0.5",
+		"-m", conf.JobMemory,
+		"--cpus", conf.JobCPU,
 		"-v", tempDir + ":/sandbox:ro",
 		image,
 	}
 
-	// TODO: time in config
-	ctx, cancel := context.WithTimeout(context.Background(), 10 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(conf.JobTimeout) * time.Second)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "docker", cmdArgs...)
@@ -89,7 +89,7 @@ func RunSandbox(r *RunRequest) []byte {
 	return jsonResponse
 }
 
-func Worker(id int, conn *amqp.Connection, jobs <-chan amqp.Delivery) {
+func Worker(id int, conn *amqp.Connection, jobs <-chan amqp.Delivery, conf *config.Config) {
 	log.Printf("Worker (%d) started!\n", id)
 
 	ch, err := conn.Channel()
@@ -109,7 +109,7 @@ func Worker(id int, conn *amqp.Connection, jobs <-chan amqp.Delivery) {
 			return
 		}
 
-		response := RunSandbox(&request)
+		response := RunSandbox(&request, conf)
 
 		err = ch.Publish(
 			"",

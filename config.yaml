@@ -1,11 +1,19 @@
 ---
-# Application configuration
+# --- General ---
 address: 127.0.0.1
 port: 8080
-supportedLanguages:
-  - python
-  - go
 rabbitmq:
   url: "amqp://guest:guest@localhost:5672/"
   queue: "runner_jobs"
-maxJobs: 4
+supportedLanguages:
+  - "python"
+  - "go"
+
+# --- API ---
+apiTimeout: 5
+
+# --- Worker ---
+maxWorkers: 2
+jobCpu: "1"
+jobMemory: "1024m"
+jobTimeout: 10

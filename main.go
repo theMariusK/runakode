@@ -80,10 +80,10 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
-	jobChan := make(chan amqp.Delivery, conf.MaxJobs * 2)
+	jobChan := make(chan amqp.Delivery, conf.MaxWorkers * 2)
 
-	for i := 0; i < conf.MaxJobs; i++ {
-		go worker.Worker(i, conn, jobChan)
+	for i := 0; i < conf.MaxWorkers; i++ {
+		go worker.Worker(i, conn, jobChan, conf)
 	}
 
 	for msg := range msgs {

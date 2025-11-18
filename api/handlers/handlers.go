@@ -24,7 +24,7 @@ type RunResponse struct {
 	exitCode int `json:"exit_code"`
 }
 
-func SendAndWait(mq *amqp.Channel, queue string, job []byte) ([]byte, error) {
+func SendAndWait(mq *amqp.Channel, queue string, job []byte, timeout int) ([]byte, error) {
 	corrID := uuid.New().String()
 
 	reply, err := mq.QueueDeclare(
@@ -52,8 +52,7 @@ func SendAndWait(mq *amqp.Channel, queue string, job []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	// TODO: time in config
-        ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+        ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout) * time.Second)
 	defer cancel()
 
 	err = mq.PublishWithContext(
@@ -103,7 +102,7 @@ func Api(conf *config.Config, mq *amqp.Channel) (http.HandlerFunc) {
 		}
 
 		job, err := json.Marshal(request)
-		response, err := SendAndWait(mq, conf.RabbitMQ.Queue, job)
+		response, err := SendAndWait(mq, conf.RabbitMQ.Queue, job, conf.ApiTimeout)
 		if err != nil {
 			log.Println(err.Error())
 		}
