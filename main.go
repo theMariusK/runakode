@@ -1,18 +1,48 @@
 package main
 
 import (
-	"github.com/theMariusK/runakode/worker/config"
-	"flag"
-	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
-	"github.com/theMariusK/runakode/worker/runner"
+	"flag"
+	"github.com/theMariusK/runakode/config"
+	"github.com/theMariusK/runakode/api/server"
+	"github.com/theMariusK/runakode/worker"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 func main() {
 	// initial configuration
-	configPath := flag.String("config", "../config.yaml", `
+	configPath := flag.String("config", "./config.yaml", `
 	"Configuration file path, default is ../config.yaml"`)
 	conf := config.Load(*configPath)
+
+	// ability to override configuration
+	default_values := map[string]string{
+		"address": "127.0.0.1",
+		"port": "8080",
+	}
+
+	address := flag.String("address", default_values["address"], `
+	"IP address on which the API will be listening, default is 127.0.0.1"`)
+	port := flag.String("port", default_values["port"], `
+	"Port on which the API will be listening, default is 8080"`)
+	flag.Parse()
+
+	if *address != default_values["address"] {
+		conf.Address = *address
+	}
+
+	if *port != default_values["port"] {
+		conf.Port = *port
+	}
+
+	go func() {
+		server := server.Init(conf)
+		if err := server.Run(); err != nil {
+			log.Fatalf("Server error: %v", err)
+		}
+	}()
+
+	// -------------
 
 	conn, err := amqp.Dial(conf.RabbitMQ.URL)
 	if err != nil {
@@ -54,7 +84,7 @@ func main() {
 	jobChan := make(chan amqp.Delivery, conf.MaxJobs * 2)
 
 	for i := 0; i < conf.MaxJobs; i++ {
-		go runner.Worker(i, conn, jobChan)
+		go worker.Worker(i, conn, jobChan)
 	}
 
 	for msg := range msgs {

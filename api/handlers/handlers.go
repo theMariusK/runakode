@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"log"
 	"encoding/json"
-	"github.com/theMariusK/runakode/api/config"
+	"github.com/theMariusK/runakode/config"
 	"slices"
 	"time"
 	amqp "github.com/rabbitmq/amqp091-go"

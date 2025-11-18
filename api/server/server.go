@@ -2,7 +2,7 @@ package server
 
 import (
 	"net/http"
-	"github.com/theMariusK/runakode/api/config"
+	"github.com/theMariusK/runakode/config"
 	"github.com/theMariusK/runakode/api/handlers"
 	"fmt"
 	"log"
