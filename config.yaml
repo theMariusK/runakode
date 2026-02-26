@@ -10,10 +10,16 @@ supportedLanguages:
   - "go"
 
 # --- API ---
-apiTimeout: 5
+apiTimeout: 15
 
 # --- Worker ---
 maxWorkers: 2
 jobCpu: "1"
 jobMemory: "1024m"
 jobTimeout: 10
+outputMaxBytes: 1048576
+
+# --- Sandbox Images ---
+sandboxImages:
+  python: "python-runner"
+  go: "go-runner"

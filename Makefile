@@ -1,4 +1,5 @@
-# ---
+.PHONY: all build build_images clean
+
 all: build build_images
 
 build:
@@ -17,9 +18,9 @@ build_images:
 clean:
 	@echo "Cleaning the project..."
 	@echo "Removing the application..."
-	[ -f ./runakode ] && rm -f ./runakode || true
+	rm -f ./runakode ./runakode-api ./runakode-worker
 	@echo "Application removed."
 	@echo "Removing built Docker images..."
-	docker image rm python-runner
-	docker image rm go-runner
+	-docker image rm python-runner
+	-docker image rm go-runner
 	@echo "Docker images removed."
